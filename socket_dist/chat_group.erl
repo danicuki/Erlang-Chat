@@ -1,9 +1,9 @@
 %% ---
 %%  Excerpted from "Programming Erlang",
 %%  published by The Pragmatic Bookshelf.
-%%  Copyrights apply to this code. It may not be used to create training material, 
+%%  Copyrights apply to this code. It may not be used to create training material,
 %%  courses, books, articles, and the like. Contact us if you are in doubt.
-%%  We make no guarantees that this code is fit for any purpose. 
+%%  We make no guarantees that this code is fit for any purpose.
 %%  Visit http://www.pragmaticprogrammer.com/titles/jaerlang for more book information.
 %%---
 
@@ -35,14 +35,20 @@ group_controller(L) ->
 	{chan, C, {relay, Nick, Str}} ->
 	    foreach(fun({Pid,_}) -> send(Pid, {msg,Nick,C,Str}) end, L),
 	    group_controller(L);
+	{chan, C, update_users} ->
+	    Nicks = lists:map(fun({Pid,Nick}) -> Nick end, L),
+      foreach(fun({Pid,_}) -> send(Pid, {sys,update_users,Nicks}) end, L),
+      group_controller(L);
 	{login, C, Nick} ->
 	    controller(C, self()),
 	    send(C, ack),
 	    self() ! {chan, C, {relay, Nick, "I'm joining the group"}},
+	    self() ! {chan, C, update_users},
 	    group_controller([{C,Nick}|L]);
 	{chan_closed, C} ->
 	    {Nick, L1} = delete(C, L, []),
 	    self() ! {chan, C, {relay, Nick, "I'm leaving the group"}},
+	    self() ! {chan, C, update_users},
 	    group_controller(L1);
 	Any ->
 	    io:format("group controller received Msg=~p~n", [Any]),

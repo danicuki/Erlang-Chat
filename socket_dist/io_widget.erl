@@ -1,19 +1,19 @@
 %% ---
 %%  Excerpted from "Programming Erlang",
 %%  published by The Pragmatic Bookshelf.
-%%  Copyrights apply to this code. It may not be used to create training material, 
+%%  Copyrights apply to this code. It may not be used to create training material,
 %%  courses, books, articles, and the like. Contact us if you are in doubt.
-%%  We make no guarantees that this code is fit for any purpose. 
+%%  We make no guarantees that this code is fit for any purpose.
 %%  Visit http://www.pragmaticprogrammer.com/titles/jaerlang for more book information.
 %%---
 -module(io_widget).
 
 -export([get_state/1,
-	 start/1, test/0, 
-	 set_handler/2, 
+	 start/1, test/0,
+	 set_handler/2,
 	 set_prompt/2,
 	 set_state/2,
-	 set_title/2, insert_str/2, update_state/3]).
+	 set_title/2, insert_str/2, update_state/3, update_users/2]).
 
 start(Pid) ->
     gs:start(),
@@ -25,9 +25,10 @@ set_handler(Pid, Fun)   -> Pid ! {handler, Fun}.
 set_prompt(Pid, Str)    -> Pid ! {prompt, Str}.
 set_state(Pid, State)   -> Pid ! {state, State}.
 insert_str(Pid, Str)    -> Pid ! {insert, Str}.
-update_state(Pid, N, X) -> Pid ! {updateState, N, X}. 
+update_users(Pid, Users)-> Pid ! {update_users, Users}.
+update_state(Pid, N, X) -> Pid ! {updateState, N, X}.
 
-rpc(Pid, Q) ->    
+rpc(Pid, Q) ->
     Pid ! {self(), Q},
     receive
 	{Pid, R} ->
@@ -35,21 +36,22 @@ rpc(Pid, Q) ->
     end.
 
 widget(Pid) ->
-    Size = [{width,500},{height,200}],
+    Size = [{width,600},{height,200}],
     Win = gs:window(gs:start(),
 		    [{map,true},{configure,true},{title,"window"}|Size]),
-    gs:frame(packer, Win,[{packer_x, [{stretch,1,500}]},
-			  {packer_y, [{stretch,10,100,120},
-				      {stretch,1,15,15}]}]),
+    gs:frame(packer, Win,[
+        {packer_x, [{stretch,3,500},{stretch,1,200}]},
+			  {packer_y, [{stretch,10,100,120}, {stretch,1,15,15}]}]),
     gs:create(editor,editor,packer, [{pack_x,1},{pack_y,1},{vscroll,right}]),
     gs:create(entry, entry, packer, [{pack_x,1},{pack_y,2},{keypress,true}]),
+    gs:create(listbox, users, packer, [{pack_x,2},{pack_y,{1,2}},{vscroll,right},{items, []}]),
     gs:config(packer, Size),
     Prompt = " > ",
     State = nil,
     gs:config(entry, {insert,{0,Prompt}}),
-    loop(Win, Pid, Prompt, State, fun parse/1). 
+    loop(Win, Pid, Prompt, State, fun parse/1).
 
-loop(Win, Pid, Prompt, State, Parse) ->   
+loop(Win, Pid, Prompt, State, Parse) ->
     receive
 	{From, get_state} ->
 	    From ! {self(), State},
@@ -66,6 +68,9 @@ loop(Win, Pid, Prompt, State, Parse) ->
 	    loop(Win, Pid, Prompt, S, Parse);
 	{title, Str} ->
 	    gs:config(Win, [{title, Str}]),
+	    loop(Win, Pid, Prompt, State, Parse);
+	{update_users, Users} ->
+	    gs:config(users, {items, Users}),
 	    loop(Win, Pid, Prompt, State, Parse);
 	{insert, Str} ->
 	    gs:config(editor, {insert,{'end',Str}}),
@@ -129,7 +134,7 @@ loop(W) ->
 parse(Str) ->
     {str, Str}.
 
-    
-    
-    
-		  
+
+
+
+

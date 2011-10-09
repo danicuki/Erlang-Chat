@@ -1,14 +1,14 @@
 %% ---
 %%  Excerpted from "Programming Erlang",
 %%  published by The Pragmatic Bookshelf.
-%%  Copyrights apply to this code. It may not be used to create training material, 
+%%  Copyrights apply to this code. It may not be used to create training material,
 %%  courses, books, articles, and the like. Contact us if you are in doubt.
-%%  We make no guarantees that this code is fit for any purpose. 
+%%  We make no guarantees that this code is fit for any purpose.
 %%  Visit http://www.pragmaticprogrammer.com/titles/jaerlang for more book information.
 %%---
 -module(lib_io_widget).
 
--export([start/1, test/0, 
+-export([start/1, test/0,
 	 set_handler/2, set_prompt/2, set_title/2, insert_str/2]).
 
 start(Pid) ->
@@ -32,10 +32,10 @@ widget(Pid) ->
     gs:config(packer, Size),
     Prompt = " > ",
     gs:config(entry, {insert,{0,Prompt}}),
-    loop(Win, Pid, Prompt, fun parse/1). 
+    loop(Win, Pid, Prompt, fun parse/1).
 
 
-loop(Win, Pid, Prompt, Parse) ->   
+loop(Win, Pid, Prompt, Parse) ->
     receive
 	{handler, Fun} ->
 	    loop(Win, Pid, Prompt, Fun);
@@ -105,7 +105,7 @@ loop(W) ->
 parse(Str) ->
     {str, Str}.
 
-    
-    
-    
-		  
+
+
+
+
