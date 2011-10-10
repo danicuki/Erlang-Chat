@@ -10,10 +10,15 @@
 
 -import(io_widget,
 	[get_state/1, insert_str/2, set_prompt/2, set_state/2,
-	 set_title/2, set_handler/2, update_state/3, update_users/2]).
+	 set_title/2, set_handler/2, update_state/3, update_groups/2, update_users/2]).
 
--export([start/0, test/0, connect/5]).
+-export([start/0, test/0, connect/5, start/1, start/2]).
 
+start(G, U) ->
+  connect("localhost", 2223, "AsDT67aQ", G, U).
+
+start(G) ->
+  connect("localhost", 2223, "AsDT67aQ", G, "joe").
 
 start() ->
     connect("localhost", 2223, "AsDT67aQ", "general", "joe").
@@ -78,6 +83,9 @@ active(Widget, MM) ->
 	 {chan, MM, {sys, update_users, Users}} ->
 	     update_users(Widget, Users),
 	     active(Widget, MM);
+	 {chan, MM, {sys, update_groups, Groups}} ->
+     update_groups(Widget, Groups),
+     active(Widget, MM);
 	 {chan, MM, {msg, From, Pid, Str}} ->
 	     insert_str(Widget, [From,"@",pid_to_list(Pid)," ", Str, "\n"]),
 	     active(Widget, MM);

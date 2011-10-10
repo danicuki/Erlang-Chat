@@ -13,20 +13,21 @@
 	 set_handler/2,
 	 set_prompt/2,
 	 set_state/2,
-	 set_title/2, insert_str/2, update_state/3, update_users/2]).
+	 set_title/2, insert_str/2, update_state/3, update_users/2, update_groups/2]).
 
 start(Pid) ->
     gs:start(),
     spawn_link(fun() -> widget(Pid) end).
 
-get_state(Pid)          -> rpc(Pid, get_state).
-set_title(Pid, Str)     -> Pid ! {title, Str}.
-set_handler(Pid, Fun)   -> Pid ! {handler, Fun}.
-set_prompt(Pid, Str)    -> Pid ! {prompt, Str}.
-set_state(Pid, State)   -> Pid ! {state, State}.
-insert_str(Pid, Str)    -> Pid ! {insert, Str}.
-update_users(Pid, Users)-> Pid ! {update_users, Users}.
-update_state(Pid, N, X) -> Pid ! {updateState, N, X}.
+get_state(Pid)             -> rpc(Pid, get_state).
+set_title(Pid, Str)        -> Pid ! {title, Str}.
+set_handler(Pid, Fun)      -> Pid ! {handler, Fun}.
+set_prompt(Pid, Str)       -> Pid ! {prompt, Str}.
+set_state(Pid, State)      -> Pid ! {state, State}.
+insert_str(Pid, Str)       -> Pid ! {insert, Str}.
+update_users(Pid, Users)   -> Pid ! {update_users, Users}.
+update_groups(Pid, Groups) -> Pid ! {update_groups, Groups}.
+update_state(Pid, N, X)    -> Pid ! {updateState, N, X}.
 
 rpc(Pid, Q) ->
     Pid ! {self(), Q},
@@ -41,10 +42,11 @@ widget(Pid) ->
 		    [{map,true},{configure,true},{title,"window"}|Size]),
     gs:frame(packer, Win,[
         {packer_x, [{stretch,3,500},{stretch,1,200}]},
-			  {packer_y, [{stretch,10,100,120}, {stretch,1,15,15}]}]),
+			  {packer_y, [{stretch,10,100,120}, {stretch,1,15,15}, {stretch,10,50,50}]}]),
     gs:create(editor,editor,packer, [{pack_x,1},{pack_y,1},{vscroll,right}]),
     gs:create(entry, entry, packer, [{pack_x,1},{pack_y,2},{keypress,true}]),
     gs:create(listbox, users, packer, [{pack_x,2},{pack_y,{1,2}},{vscroll,right},{items, []}]),
+    gs:create(listbox, groups, packer, [{pack_x,1},{pack_y,3},{vscroll,right},{items, ['bla', 'ble']}]),
     gs:config(packer, Size),
     Prompt = " > ",
     State = nil,
@@ -72,9 +74,12 @@ loop(Win, Pid, Prompt, State, Parse) ->
 	{update_users, Users} ->
 	    gs:config(users, {items, Users}),
 	    loop(Win, Pid, Prompt, State, Parse);
+	{update_groups, Groups} ->
+	    gs:config(groups, {items, Groups}),
+	    loop(Win, Pid, Prompt, State, Parse);
 	{insert, Str} ->
 	    gs:config(editor, {insert,{'end',Str}}),
-	    scroll_to_show_last_line(),
+      % scroll_to_show_last_line(),
 	    loop(Win, Pid, Prompt, State, Parse);
 	{updateState, N, X} ->
 	    io:format("setelemtn N=~p X=~p State=~p~n",[N,X,State]),

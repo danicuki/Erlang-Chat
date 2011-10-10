@@ -39,6 +39,9 @@ group_controller(L) ->
 	    Nicks = lists:map(fun({Pid,Nick}) -> Nick end, L),
       foreach(fun({Pid,_}) -> send(Pid, {sys,update_users,Nicks}) end, L),
       group_controller(L);
+  {sys, update_groups, Groups} ->
+      foreach(fun({Pid,_}) -> send(Pid, {sys,update_groups,Groups}) end, L),
+      group_controller(L);
 	{login, C, Nick} ->
 	    controller(C, self()),
 	    send(C, ack),

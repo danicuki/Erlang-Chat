@@ -1,9 +1,9 @@
 %% ---
 %%  Excerpted from "Programming Erlang",
 %%  published by The Pragmatic Bookshelf.
-%%  Copyrights apply to this code. It may not be used to create training material, 
+%%  Copyrights apply to this code. It may not be used to create training material,
 %%  courses, books, articles, and the like. Contact us if you are in doubt.
-%%  We make no guarantees that this code is fit for any purpose. 
+%%  We make no guarantees that this code is fit for any purpose.
 %%  Visit http://www.pragmaticprogrammer.com/titles/jaerlang for more book information.
 %%---
 
@@ -19,7 +19,7 @@ start() ->
     lib_chan:start_server("chat.conf").
 
 start_server() ->
-    register(chat_server, 
+    register(chat_server,
 	     spawn(fun() ->
 			   process_flag(trap_exit, true),
 			   Val= (catch server_loop([])),
@@ -37,14 +37,20 @@ server_loop(L) ->
 		    server_loop(L);
 		error ->
 		    Pid = spawn_link(fun() ->
-					     chat_group:start(Channel, Nick) 
+					     chat_group:start(Channel, Nick)
 				     end),
+        self() ! {sys, update_groups},
 		    server_loop([{Group,Pid}|L])
 	    end;
 	{mm_closed, _} ->
-	    server_loop(L); 
+	    server_loop(L);
+	{sys, update_groups} ->
+	    Groups = lists:map(fun({Group, Pid}) -> Group end, L),
+	    foreach(fun({_, Pid}) -> send(Pid, {sys, update_groups, Groups}) end, L),
+ 	    server_loop(L);
 	{'EXIT', Pid, allGone} ->
 	    L1 = remove_group(Pid, L),
+	    self() ! {sys, update_groups},
 	    server_loop(L1);
 	Msg ->
 	    io:format("Server received Msg=~p~n",
