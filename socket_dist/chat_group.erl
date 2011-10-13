@@ -11,13 +11,15 @@
 -import(lib_chan_mm, [send/2, controller/2]).
 -import(lists, [foreach/2, reverse/2]).
 
--export([start/2]).
+-export([start/3]).
 
-start(C, Nick) ->
+start(C, Nick, Groups) ->
     process_flag(trap_exit, true),
     controller(C, self()),
     send(C, ack),
     self() ! {chan, C, {relay, Nick, "I'm starting the group"}},
+    self() ! {chan, C, update_users},
+    send(C, {sys,update_groups,Groups}),
     group_controller([{C,Nick}]).
 
 
@@ -32,6 +34,9 @@ group_controller([]) ->
     exit(allGone);
 group_controller(L) ->
     receive
+	{chan, C, {give_me_the_members, Group}} ->
+      chat_server ! {give_me_the_members, Group, C},
+	    group_controller(L);
 	{chan, C, {relay, Nick, Str}} ->
 	    foreach(fun({Pid,_}) -> send(Pid, {msg,Nick,C,Str}) end, L),
 	    group_controller(L);
@@ -39,18 +44,23 @@ group_controller(L) ->
 	    Nicks = lists:map(fun({Pid,Nick}) -> Nick end, L),
       foreach(fun({Pid,_}) -> send(Pid, {sys,update_users,Nicks}) end, L),
       group_controller(L);
-  {sys, update_groups, Groups} ->
+  {send, {sys, update_groups, Groups}} ->
       foreach(fun({Pid,_}) -> send(Pid, {sys,update_groups,Groups}) end, L),
       group_controller(L);
-	{login, C, Nick} ->
+  {send_members_to_client, C} ->
+      Members = lists:map(fun({Pid,Nick}) -> Nick end, L),
+	    send(C, {sys, update_members, Members}),
+	    group_controller(L);
+	{login, C, Nick, Groups} ->
 	    controller(C, self()),
 	    send(C, ack),
-	    self() ! {chan, C, {relay, Nick, "I'm joining the group"}},
+	    self() ! {chan, C, {relay, Nick, "I'm joining the groupos!"}},
 	    self() ! {chan, C, update_users},
+	    send(C, {sys,update_groups,Groups}),
 	    group_controller([{C,Nick}|L]);
 	{chan_closed, C} ->
 	    {Nick, L1} = delete(C, L, []),
-	    self() ! {chan, C, {relay, Nick, "I'm leaving the group"}},
+	    self() ! {chan, C, {relay, Nick, "I'm leaving the groupos"}},
 	    self() ! {chan, C, update_users},
 	    group_controller(L1);
 	Any ->

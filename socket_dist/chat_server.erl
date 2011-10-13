@@ -26,27 +26,32 @@ start_server() ->
 			   io:format("Server terminated with:~p~n",[Val])
 		   end)).
 
-
+groups(L) -> lists:map(fun({Group, Pid}) -> Group end, L).
 
 server_loop(L) ->
     receive
 	{mm, Channel, {login, Group, Nick}} ->
 	    case lookup(Group, L) of
 		{ok, Pid} ->
-		    Pid ! {login, Channel, Nick},
+		    Pid ! {login, Channel, Nick, groups(L)},
 		    server_loop(L);
 		error ->
 		    Pid = spawn_link(fun() ->
-					     chat_group:start(Channel, Nick)
+					     chat_group:start(Channel, Nick, groups(L))
 				     end),
         self() ! {sys, update_groups},
 		    server_loop([{Group,Pid}|L])
 	    end;
+	{give_me_the_members, Group, C} ->
+	    case lookup(Group, L) of
+		    {ok, Pid} -> Pid ! {send_members_to_client, C};
+  		  error -> send(C, {sys,update_members,['Group does not exists']})
+  	  end,
+      server_loop(L);
 	{mm_closed, _} ->
 	    server_loop(L);
 	{sys, update_groups} ->
-	    Groups = lists:map(fun({Group, Pid}) -> Group end, L),
-	    foreach(fun({_, Pid}) -> send(Pid, {sys, update_groups, Groups}) end, L),
+	    foreach(fun({_, Pid}) -> send(Pid, {sys, update_groups, groups(L)}) end, L),
  	    server_loop(L);
 	{'EXIT', Pid, allGone} ->
 	    L1 = remove_group(Pid, L),

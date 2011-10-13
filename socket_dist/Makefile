@@ -13,10 +13,10 @@ MODS =  any_apply \
 	lib_chan lib_chan_mm lib_chan_cs lib_chan_test\
         lib_chan_auth \
         mod_echo mod_math mod_chat_controller mod_name_server\
-        test1 test_name_server mod_srpc
+        test_name_server mod_srpc
 
 
-ERL = erl -boot start_clean 
+ERL = erl -boot start_clean
 
 all:	compile
 	@echo "To run the chat test program"
@@ -24,7 +24,7 @@ all:	compile
 	@echo "  2) in xterm one type -- make chat_server"
 	@echo "  3) in xterm two type -- make chat_client"
 	@echo "  Note: remember to type make in the directory above this"
-	@echo "        before running make in this directory"	
+	@echo "        before running make in this directory"
 	@echo "To run the lib_chan test program"
 	@echo "  1) start two xterms"
 	@echo "  2) in xterm one type -- make server"
@@ -52,5 +52,5 @@ server: compile
 client: compile
 	erl -pa ../ -boot start_clean -pa '.' -s lib_chan_test start_client
 
-clean:	
+clean:
 	rm -rf *.beam erl_crash.dump

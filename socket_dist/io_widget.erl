@@ -13,7 +13,7 @@
 	 set_handler/2,
 	 set_prompt/2,
 	 set_state/2,
-	 set_title/2, insert_str/2, update_state/3, update_users/2, update_groups/2]).
+	 set_title/2, insert_str/2, update_state/3, update_users/2, update_groups/2, update_members/2]).
 
 start(Pid) ->
     gs:start(),
@@ -27,7 +27,9 @@ set_state(Pid, State)      -> Pid ! {state, State}.
 insert_str(Pid, Str)       -> Pid ! {insert, Str}.
 update_users(Pid, Users)   -> Pid ! {update_users, Users}.
 update_groups(Pid, Groups) -> Pid ! {update_groups, Groups}.
+update_members(Pid, Members) -> Pid ! {update_members, Members}.
 update_state(Pid, N, X)    -> Pid ! {updateState, N, X}.
+
 
 rpc(Pid, Q) ->
     Pid ! {self(), Q},
@@ -37,16 +39,19 @@ rpc(Pid, Q) ->
     end.
 
 widget(Pid) ->
-    Size = [{width,600},{height,200}],
+    Size = [{width,600},{height,400}],
     Win = gs:window(gs:start(),
 		    [{map,true},{configure,true},{title,"window"}|Size]),
     gs:frame(packer, Win,[
         {packer_x, [{stretch,3,500},{stretch,1,200}]},
-			  {packer_y, [{stretch,10,100,120}, {stretch,1,15,15}, {stretch,10,50,50}]}]),
+			  {packer_y, [{stretch,10,100,120}, {stretch,1,15,15}, {stretch,1,15,15}, {stretch,10,100,120}]}]),
     gs:create(editor,editor,packer, [{pack_x,1},{pack_y,1},{vscroll,right}]),
     gs:create(entry, entry, packer, [{pack_x,1},{pack_y,2},{keypress,true}]),
     gs:create(listbox, users, packer, [{pack_x,2},{pack_y,{1,2}},{vscroll,right},{items, []}]),
-    gs:create(listbox, groups, packer, [{pack_x,1},{pack_y,3},{vscroll,right},{items, ['bla', 'ble']}]),
+    gs:create(label,packer,[{label,{text,"Groups"}},{width,150},{pack_x,1},{pack_y,3}]),
+    gs:create(label,packer,[{label,{text,"Members"}},{width,150},{pack_x,2},{pack_y,3}]),
+    gs:create(listbox, groups, packer, [{pack_x,1},{pack_y,4},{vscroll,right},{click,true},{items, []}]),
+    gs:create(listbox, members, packer, [{pack_x,2},{pack_y,4},{vscroll,right},{items, []}]),
     gs:config(packer, Size),
     Prompt = " > ",
     State = nil,
@@ -77,6 +82,9 @@ loop(Win, Pid, Prompt, State, Parse) ->
 	{update_groups, Groups} ->
 	    gs:config(groups, {items, Groups}),
 	    loop(Win, Pid, Prompt, State, Parse);
+	{update_members, Members} ->
+	    gs:config(members, {items, Members}),
+	    loop(Win, Pid, Prompt, State, Parse);
 	{insert, Str} ->
 	    gs:config(editor, {insert,{'end',Str}}),
       % scroll_to_show_last_line(),
@@ -106,6 +114,10 @@ loop(Win, Pid, Prompt, State, Parse) ->
 	    loop(Win, Pid, Prompt, State, Parse);
 	{gs, entry,keypress,_,_} ->
 	    loop(Win, Pid, Prompt, State, Parse);
+	{gs, groups, click, Data, [Index, Text,Bool | _]} ->
+	    Pid ! {self(), {give_me_the_members, Text}},
+	    loop(Win, Pid, Prompt, State, Parse);
+
 	Any ->
 	    io:format("Discarded:~p~n",[Any]),
 	    loop(Win, Pid, Prompt, State, Parse)
