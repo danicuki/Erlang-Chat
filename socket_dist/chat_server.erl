@@ -29,43 +29,48 @@ start_server() ->
 groups(L) -> lists:map(fun({Group, Pid}) -> Group end, L).
 
 server_loop(L) ->
-    receive
-	{mm, Channel, {login, Group, Nick}} ->
-	    case lookup(Group, L) of
-		{ok, Pid} ->
-		    Pid ! {login, Channel, Nick, groups(L)},
-		    server_loop(L);
-		error ->
-		    Pid = spawn_link(fun() ->
-					     chat_group:start(Channel, Nick, groups(L))
-				     end),
-        self() ! {sys, update_groups},
-		    server_loop([{Group,Pid}|L])
-	    end;
-	{give_me_the_members, Group, C} ->
-	    case lookup(Group, L) of
-		    {ok, Pid} -> Pid ! {send_members_to_client, C};
-  		  error -> send(C, {sys,update_members,['Group does not exists']})
-  	  end,
-      server_loop(L);
-	{mm_closed, _} ->
-	    server_loop(L);
-	{sys, update_groups} ->
-	    foreach(fun({_, Pid}) -> send(Pid, {sys, update_groups, groups(L)}) end, L),
- 	    server_loop(L);
-	{'EXIT', Pid, allGone} ->
-	    L1 = remove_group(Pid, L),
-	    self() ! {sys, update_groups},
-	    server_loop(L1);
-	Msg ->
-	    io:format("Server received Msg=~p~n",
-		      [Msg]),
-	    server_loop(L)
-    end.
+  receive
+  	{mm, Channel, {login, Group, Nick}} ->
+  	    case lookup(Group, L) of
+  		    {ok, Host, Port, _} ->
+  		      send(Channel, {connect_to_group, Group, Nick, Host, Port}),
+  		      server_loop(L);
+  		    error ->
+  		      io:format("Nao tem o grupo", []),
+  		      send(Channel, {create_group, Group, Nick, groups(L)}),
+            io:format("waiting ~p (~p) to create the group ~p~n", [Nick, Channel, Group]),
+      			receive
+      			    {mm, Channel, {ack, Group, Host, Port}} ->
+           			    io:format("group ~p (~p) has been created~n", [Group, Channel]),
+      		            server_loop([{Group, Host, Port, Channel}|L])
+            after 10000 ->
+                  server_loop(L)
+      		  end
+      	  end;
+  	{give_me_the_members, Group, C} ->
+  	    case lookup(Group, L) of
+  		    {ok, Pid} -> Pid ! {send_members_to_client, C};
+    		  error -> send(C, {sys,update_members,['Group does not exists']})
+    	  end,
+        server_loop(L);
+  	{mm_closed, _} ->
+  	    server_loop(L);
+  	{sys, update_groups} ->
+  	    foreach(fun({_, Pid}) -> send(Pid, {sys, update_groups, groups(L)}) end, L),
+   	    server_loop(L);
+  	{'EXIT', Pid, allGone} ->
+  	    L1 = remove_group(Pid, L),
+  	    self() ! {sys, update_groups},
+  	    server_loop(L1);
+  	Msg ->
+  	    io:format("Server received Msg=~p~n",
+  		      [Msg]),
+  	    server_loop(L)
+  end.
 
 
 
-lookup(G, [{G,Pid}|_]) -> {ok, Pid};
+lookup(G, [{Group, Host, Port, Channel}|_]) -> {ok, Host, Port, Channel};
 lookup(G, [_|T])       -> lookup(G, T);
 lookup(_,[])           -> error.
 

@@ -21,14 +21,14 @@ start(G) ->
   connect("localhost", 2223, "AsDT67aQ", G, "joe").
 
 start() ->
-    connect("localhost", 2223, "AsDT67aQ", "general", "joe").
+    connect("localhost", 2223, "AsDT67aQ", "general", "daniel").
 
 
 test() ->
-    connect("localhost", 2223, "AsDT67aQ", "general", "daniel"),
-    connect("localhost", 2223, "AsDT67aQ", "general", "daniella"),
-    connect("localhost", 2223, "AsDT67aQ", "general", "reverbel"),
-    connect("localhost", 2223, "AsDT67aQ", "general", "steve").
+    connect("localhost", 2223, "AsDT67aQ", "general", "daniel").
+    % connect("localhost", 2223, "AsDT67aQ", "general", "daniella"),
+    % connect("localhost", 2223, "AsDT67aQ", "general", "reverbel"),
+    % connect("localhost", 2223, "AsDT67aQ", "general", "steve").
 
 
 connect(Host, Port, HostPsw, Group, Nick) ->
@@ -66,14 +66,38 @@ disconnected(Widget, Group, Nick) ->
 
 wait_login_response(Widget, MM) ->
     receive
-	{chan, MM, ack} ->
+    {chan, MM, {create_group, Group, Nick, Groups}} ->
+    	  io:format("Group novo. Usuario ~p vai criar o grupo ~p~n", [Nick, Group]),
+    	  {Host, Port} = get_host_and_port(Nick),
+    		Parent = self(),
+    	  spawn_link(fun() -> chat_group:start_group(MM, Parent, Nick, Group, Groups, Host, Port) end),
+    	  GroupMM = connect_in_group(Group, Nick, Host, Port),
+    	  insert_str(Widget, [Nick,"@", pid_to_list(self()),"I'm starting the group\n"]),
+        % Espera se conectar no grupo.
+        wait_login_response(Widget, GroupMM);
+    {chan, MM, {connect_to_group, Group, Nick, Host, Port}} ->
+    	  GroupMM = connect_in_group(Group, Nick, Host, Port),
+    		% Fecha a conexao que foi aberta com o servidor
+    		MM ! close,
+        % Espera se conectar no grupo.
+        wait_login_response(Widget, GroupMM);
+	  {chan, MM, ack} ->
 	    active(Widget, MM);
 	Other ->
 	    io:format("chat_client login unexpected:~p~n",[Other]),
 	    wait_login_response(Widget, MM)
     end.
 
+get_host_and_port(Nick) ->
+    {ok, [{port, Port}, _]} = file:consult(Nick++".conf"),
+    {localhost, Port}.
 
+
+connect_in_group(Group, Nick, Host, Port) ->
+    io:format("Usuario ~p conectando no grupo ~p (~p:~p) ~n", [Nick, Group, Host, Port]),
+	  GroupMM = try_to_connect_in_group(Host, Port),
+    lib_chan_mm:send(GroupMM, {login, Nick}),
+	  GroupMM.
 
 active(Widget, MM) ->
      receive
@@ -122,6 +146,14 @@ try_to_connect(Parent, Host, Port, Pwd) ->
 	    Parent ! {connected, MM},
 	    exit(connectorFinished)
     end.
+
+try_to_connect_in_group(Host, Port) ->
+	case lib_chan:connect(Host, Port, chat_group, "AsDT67aQ", []) of
+		{error, _Why} ->
+			sleep(2000),
+			try_to_connect_in_group(Host, Port);
+		{ok, MM} -> MM
+	end.
 
 
 sleep(T) ->
