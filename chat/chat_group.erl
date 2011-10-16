@@ -11,14 +11,12 @@
 -import(lib_chan_mm, [send/2, controller/2]).
 -import(lists, [foreach/2, reverse/2]).
 
--export([start_group/7]).
+-export([start_group/6]).
 
-start_group(ServerMM, Parent, Nick, Group, Groups, Host, Port) ->
+start_group(ServerMM, Parent, Nick, Group, Host, Port) ->
     process_flag(trap_exit, true),
     controller(ServerMM, self()),
     register(list_to_atom(Group), self()),
-    % self() ! {chan, Parent, {relay, Nick, "I'm starting the group"}},
-    % self() ! {chan, Parent, update_users},
     io:format("Criando grupo ~p~n", [Group]),
     lib_chan:start_server(Nick++".conf"),
   	io:format("Grupo ~p criado em ~p:~p~n", [Group, Host, Port]),

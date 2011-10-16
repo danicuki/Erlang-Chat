@@ -37,7 +37,7 @@ server_loop(L) ->
   		      server_loop(L);
   		    error ->
   		      io:format("Nao tem o grupo ~n", []),
-  		      send(Channel, {create_group, Group, Nick, groups(L)}),
+  		      send(Channel, {create_group, Group, Nick}),
             io:format("waiting ~p (~p) to create the group ~p~n", [Nick, Channel, Group]),
       			receive
       			    {mm, Channel, {ack, Group, Host, Port}} ->

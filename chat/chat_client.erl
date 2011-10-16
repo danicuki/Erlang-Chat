@@ -66,12 +66,11 @@ disconnected(Widget, Group, Nick) ->
 
 wait_login_response(Widget, MM) ->
     receive
-    {chan, MM, {create_group, Group, Nick, Groups}} ->
+    {chan, MM, {create_group, Group, Nick}} ->
     	  io:format("Group novo. Usuario ~p vai criar o grupo ~p~n", [Nick, Group]),
-    	  io:format("Grupos existentes: ~p ~n", [Groups]),
     	  {Host, Port} = get_host_and_port(Nick),
     		Parent = self(),
-    	  spawn_link(fun() -> chat_group:start_group(MM, Parent, Nick, Group, Groups, Host, Port) end),
+    	  spawn_link(fun() -> chat_group:start_group(MM, Parent, Nick, Group, Host, Port) end),
     	  GroupMM = connect_in_group(Group, Nick, Host, Port),
     	  insert_str(Widget, [Nick,"@", pid_to_list(self()),"I'm starting the group\n"]),
         % Espera se conectar no grupo.
