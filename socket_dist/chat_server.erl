@@ -78,7 +78,7 @@ lookup(Group, [{Group, Host, Port, Channel}|_]) -> {ok, Host, Port, Channel};
 lookup(Group, [_|T])       -> lookup(Group, T);
 lookup(_,[])           -> error.
 
-remove_group(Pid, [{G,Pid}|T]) -> io:format("~p removed~n",[G]), T;
+remove_group(Group, [{Group, _, _, _}|T]) -> io:format("~p removed~n",[Group]), T;
 remove_group(Pid, [H|T])       -> [H|remove_group(Pid, T)];
 remove_group(_, [])            -> [].
 
