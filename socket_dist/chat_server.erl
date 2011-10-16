@@ -46,21 +46,25 @@ server_loop(L) ->
             after 10000 ->
                   server_loop(L)
       		  end
-      	  end;
-  	{give_me_the_members, Group, C} ->
+      	  end,
+      	server_loop(L);
+    {mm, Channel, {give_me_the_members, Group, Client}} ->
   	    case lookup(Group, L) of
-  		    {ok, Pid} -> Pid ! {send_members_to_client, C};
-    		  error -> send(C, {sys,update_members,['Group does not exists']})
+  		    {ok, _, _, GroupChannel} -> send(GroupChannel, {send_members_to_client, Channel, Client});
+    		  error -> send(Channel, {sys, update_members, Client, ['Group does not exists']})
     	  end,
+        server_loop(L);
+    {mm, Channel, {sys,update_members, Members, GroupChannel, ClientChannel}} ->
+        send(GroupChannel, {sys, update_members, Members, ClientChannel}),
         server_loop(L);
   	{mm_closed, _} ->
   	    server_loop(L);
-  	{sys, update_groups} ->
-  	    foreach(fun({_, Pid}) -> send(Pid, {sys, update_groups, groups(L)}) end, L),
+  	{mm, Channel, {sys, update_groups}} ->
+  	    send(Channel, {sys, update_groups, groups(L)}),
    	    server_loop(L);
   	{'EXIT', Pid, allGone} ->
   	    L1 = remove_group(Pid, L),
-  	    self() ! {sys, update_groups},
+  	    self() ! {mm, self(), {sys, update_groups}},
   	    server_loop(L1);
   	Msg ->
   	    io:format("Server received Msg=~p~n",
@@ -70,8 +74,8 @@ server_loop(L) ->
 
 
 
-lookup(G, [{Group, Host, Port, Channel}|_]) -> {ok, Host, Port, Channel};
-lookup(G, [_|T])       -> lookup(G, T);
+lookup(Group, [{Group, Host, Port, Channel}|_]) -> {ok, Host, Port, Channel};
+lookup(Group, [_|T])       -> lookup(Group, T);
 lookup(_,[])           -> error.
 
 remove_group(Pid, [{G,Pid}|T]) -> io:format("~p removed~n",[G]), T;

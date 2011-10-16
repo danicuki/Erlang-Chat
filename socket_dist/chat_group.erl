@@ -23,7 +23,7 @@ start_group(ServerMM, Parent, Nick, Group, Groups, Host, Port) ->
     lib_chan:start_server(Nick++".conf"),
   	io:format("Grupo ~p criado em ~p:~p~n", [Group, Host, Port]),
     send(ServerMM, {ack, Group, Host, Port}),
-    % send(ServerMM, {sys, update_groups, Groups}),
+    send(ServerMM, {sys, update_groups}),
   	group_controller(ServerMM, Parent, Group, []).
 
 
@@ -38,8 +38,8 @@ find_nick_pid(To, []) -> self().
 
 group_controller(ServerMM, Parent, Group, L) ->
     receive
-	{chan, C, {give_me_the_members, Group}} ->
-      ServerMM ! {give_me_the_members, Group, C},
+	{chan, C, {give_me_the_members, G}} ->
+      send(ServerMM, {give_me_the_members, G, C}),
 	    group_controller(ServerMM, Parent, Group, L);
 	{chan, C, {relay, Nick, Str}} ->
 	    foreach(fun({Pid,_}) -> send(Pid, {msg,Nick,C,Str}) end, L),
@@ -52,19 +52,22 @@ group_controller(ServerMM, Parent, Group, L) ->
 	    Nicks = lists:map(fun({_,Nick}) -> Nick end, L),
       foreach(fun({Pid,_}) -> send(Pid, {sys,update_users,Nicks}) end, L),
       group_controller(ServerMM, Parent, Group, L);
-  {send, {sys, update_groups, Groups}} ->
+  {chan, _, {sys, update_groups, Groups}} ->
       foreach(fun({Pid,_}) -> send(Pid, {sys,update_groups,Groups}) end, L),
       group_controller(ServerMM, Parent, Group, L);
-  {send_members_to_client, C} ->
+  {chan, C, {send_members_to_client, GroupChannel, ClientChannel}} ->
       Members = lists:map(fun({_,Nick}) -> Nick end, L),
-	    send(C, {sys, update_members, Members}),
+	    send(C, {sys, update_members, Members, GroupChannel, ClientChannel}),
+	    group_controller(ServerMM, Parent, Group, L);
+	{chan, C, {sys,update_members, Members, ClientChannel}} ->
+	    send(ClientChannel, {sys, update_members, Members}),
 	    group_controller(ServerMM, Parent, Group, L);
 	{mm, C, {login, Nick}} ->
 	    controller(C, self()),
 	    send(C, ack),
 	    self() ! {chan, C, {relay, Nick, "I'm joining the groups!"}},
 	    self() ! {chan, C, update_users},
-      % send(C, {sys,update_groups,Groups}),
+      send(ServerMM, {sys, update_groups}),
 	    group_controller(ServerMM, Parent, Group, [{C,Nick}|L]);
 	{chan_closed, C} ->
 	    {Nick, L1} = delete(C, L, []),

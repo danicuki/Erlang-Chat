@@ -25,10 +25,10 @@ start() ->
 
 
 test() ->
-    connect("localhost", 2223, "AsDT67aQ", "general", "daniel"),
-    connect("localhost", 2223, "AsDT67aQ", "general", "daniella"),
-    connect("localhost", 2223, "AsDT67aQ", "general", "reverbel"),
-    connect("localhost", 2223, "AsDT67aQ", "general", "steve").
+    connect("localhost", 2223, "AsDT67aQ", "general", "daniel").
+    % connect("localhost", 2223, "AsDT67aQ", "general", "daniella"),
+    % connect("localhost", 2223, "AsDT67aQ", "general", "reverbel"),
+    % connect("localhost", 2223, "AsDT67aQ", "general", "steve").
 
 
 connect(Host, Port, HostPsw, Group, Nick) ->
@@ -42,6 +42,7 @@ handler(Host, Port, HostPsw, Group, Nick) ->
     set_prompt(Widget, [Nick, " > "]),
     set_handler(Widget, fun parse_command/1),
     start_connector(Host, Port, HostPsw),
+    io:format("conectou!!!=====~n",[]),
     disconnected(Widget, Group, Nick).
 
 
@@ -98,7 +99,7 @@ get_host_and_port(Nick) ->
 
 connect_in_group(Group, Nick, Host, Port) ->
     io:format("Usuario ~p conectando no grupo ~p (~p:~p) ~n", [Nick, Group, Host, Port]),
-	  GroupMM = try_to_connect_in_group(Host, Port),
+	  GroupMM = try_to_connect_in_group(Host, Port, Group),
     lib_chan_mm:send(GroupMM, {login, Nick}),
 	  GroupMM.
 
@@ -152,11 +153,11 @@ try_to_connect(Parent, Host, Port, Pwd) ->
 	    exit(connectorFinished)
     end.
 
-try_to_connect_in_group(Host, Port) ->
-	case lib_chan:connect(Host, Port, chat_group, "AsDT67aQ", []) of
+try_to_connect_in_group(Host, Port, Group) ->
+	case lib_chan:connect(Host, Port, chat_group, "AsDT67aQ", [Group]) of
 		{error, Why} ->
 			 sleep(2000),
-			 try_to_connect_in_group(Host, Port);
+			 try_to_connect_in_group(Host, Port, Group);
 		{ok, MM} -> MM
 	end.
 
