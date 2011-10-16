@@ -88,7 +88,7 @@ loop(Win, Pid, Prompt, State, Parse) ->
 	    loop(Win, Pid, Prompt, State, Parse);
 	{insert, Str} ->
 	    gs:config(editor, {insert,{'end',Str}}),
-      % scroll_to_show_last_line(),
+      scroll_to_show_last_line(),
 	    loop(Win, Pid, Prompt, State, Parse);
 	{updateState, N, X} ->
 	    io:format("setelemtn N=~p X=~p State=~p~n",[N,X,State]),
@@ -111,10 +111,11 @@ loop(Win, Pid, Prompt, State, Parse) ->
 	    end,
 	    loop(Win, Pid, Prompt, State, Parse);
 	{gs,priv_but,click,_,_} ->
-	    Dest = try gs:read(users, selection) of
+	    Dest = try case gs:read(users, selection) of
 		    [Index] -> gs:read(users, {get, Index})
+	      end
 	    catch
-		    _ -> self() ! {insert, "Select user to send private message\n"},
+		    _:_ -> self() ! {insert, "Select user to send private message\n"},
         loop(Win, Pid, Prompt, State, Parse)
 	    end,
 	    Text = gs:read(entry, text),
@@ -134,7 +135,7 @@ loop(Win, Pid, Prompt, State, Parse) ->
 	    loop(Win, Pid, Prompt, State, Parse);
 	{gs, entry,keypress,_,_} ->
 	    loop(Win, Pid, Prompt, State, Parse);
-	{gs, groups, click, Data, [Index, Text,Bool | _]} ->
+	{gs, groups, click, _, [_, Text, _ | _]} ->
 	    Pid ! {self(), {give_me_the_members, Text}},
 	    loop(Win, Pid, Prompt, State, Parse);
 

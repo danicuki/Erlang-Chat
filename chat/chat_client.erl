@@ -25,10 +25,10 @@ start() ->
 
 
 test() ->
-    connect("localhost", 2223, "AsDT67aQ", "general", "daniel").
-    % connect("localhost", 2223, "AsDT67aQ", "general", "daniella"),
-    % connect("localhost", 2223, "AsDT67aQ", "general", "reverbel"),
-    % connect("localhost", 2223, "AsDT67aQ", "general", "steve").
+    connect("localhost", 2223, "AsDT67aQ", "general", "daniel"),
+    connect("localhost", 2223, "AsDT67aQ", "general", "daniella"),
+    connect("localhost", 2223, "AsDT67aQ", "general", "reverbel"),
+    connect("localhost", 2223, "AsDT67aQ", "general", "steve").
 
 
 connect(Host, Port, HostPsw, Group, Nick) ->

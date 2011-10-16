@@ -54,7 +54,7 @@ server_loop(L) ->
     		  error -> send(Channel, {sys, update_members, Client, ['Group does not exists']})
     	  end,
         server_loop(L);
-    {mm, Channel, {sys,update_members, Members, GroupChannel, ClientChannel}} ->
+    {mm, _Channel, {sys,update_members, Members, GroupChannel, ClientChannel}} ->
         send(GroupChannel, {sys, update_members, Members, ClientChannel}),
         server_loop(L);
   	{mm_closed, _} ->

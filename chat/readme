@@ -1,32 +1,24 @@
 IRCLITE
-Mauricio Aniche    6892132
-Mauricio De Diana  2369774
+Daniel Cukier    2943472
 
-[Geral]
-- Todo código adicionado está delimitado por comentários que identificam qual o exercício ao qual ele se refere. Isso é válido para os exercícios de 1 a 4. Como o 5 implicou em muitas modificações, nós não as delimitamos.
-- O Makefile tem dois comandos para testes:
--- make chat_server
--- make chat_client
-- O make chat_client cria quatro usuários, com as seguintes configurações:
--- jane, jim e joe no grupo 'general'
--- sue no grupo 'general2'
+ - Para compilar o código e executar o código, abrir 2 terminais e em cada um deles digitar:
+ 		term1) make chat_server
+ 		term2) make chat_client
 
-[Código]
-- As funcionalidades com características de RPC usam mensagens no formato get_X para a requisição e X para a resposta. Ex: get_all_groups é a requisição e all_groups é a resposta.
+ - o make chat_client cria 4 usuarios e os coloca no grupo padrão "general"
 
-[Funcionamento]
-- Mensagens privadas: Escrever a mensagem no campo de mensagens, o nick de destino no campo à esquerda do botão 'Pvt' e clicar no botão. O campo de nick de destino é preenchido automaticamente caso se clique em um nome na lista de contatos. As mensagens privadas aparecem no destino marcadas com '[PVT]'.
-- Lista de nicks em um grupo: Escrever o nome do grupo no campo à esquerda do botão 'Nicks in Grp' e clicar no botão.
-- Lista de grupos: Clicar no botão 'Groups'.
+ - para criar um client num outro grupo, basta digitar, na janela cliente o comando:
+    chat_client:start("nome_do_grupo", "login").
 
-[Observações para o item 5]
-Inicialização
-1 - Um chat_client se conecta no chat_server, pedindo para se conectar em um chat_group.
-2.1 - Se o chat_group não existe, o chat_server manda uma mensagem para o chat_client instruindo a criar o chat_group.
-2.1.1 - O chat_client cria o chat_group (via lib_chan) e avisa o chat_server em que endereço e porta o chat_group está para que quando outros chat_clients tentem se conectar o chat_server possa instruí-los. Quando o chat_client precisa avisar o chat_server de seu endereço e porta ele está usando como endereço o localhost, hardcoded, e a porta ele lê de um arquivo no formato <nick>.conf usado pela lib_chan. Em uma aplicação real, ao invés de ter o endereço hardcoded poderíamos ler essa configuração de um outro arquivo de configuração.
-2.2 - Se o chat_group existe, o chat_server manda uma mensagem para o  o chat_client instruindo a se conectar num chat_group existente, passando o endereço e a porta.
-2.3 - Independente de ser o criador ou não do chat_group, o chat_client se conecta nele (via lib_chan) e se desconecta do chat_server. Sempre que isso acontece o chat_group avisa os outros chat_clients de que um chat_client saiu do chat_group.
+OBS: os unicos logins que funcionam são: "reverbel", "daniella", "daniel", "steve". Isso porque o arquivo de configuração para a criaçao do group_server
+se baseia no nome do usuário, pois como todos os clientes estão na mesma maquina, temos que ter uma conf para cada usuario, para que cada uma seja
+criada numa porta diferente. Isso poderia ser aperfeicoado posteriormente
 
-Finalização
-1.1 - Quando um chat_client que não é o criador de um chat_group se desconecta de um chat_group uma mensagem é enviada aos outros chat_clients de que ele saiu do grupo.
-1.2 - Quando um chat_client que é o criador de um chat_group se desconecta o chat_group morre. Ao fazer isso, ele envia uma mensagem aos outros chat_clients de que isso aconteceu.
+ - para mandar uma mensagem somente para um destinatário (Exercicio 4), basta seleciona-lo na lista de membros do lado direito superior, digitar a mensagem e clicar no botão "Send Private"
+
+ - quando o cliente tenta entrar no grupo, se ele não existe no servidor, ele é criado no primeiro cliente. Depois outros clientes se conectam no primeiro para fazer parte do grupo. Se o cliente que criou o grupo fecha a janela, o grupo morre.
+
+ - o servidor mantem uma lista de dos grupos e das respectivas maquinas e portas onde esses grupos se encontram
+
+ - todos os grupos são listados no cliente, na parte inferior esquerda da janela. Para obter a lista de usuarios de um grupo, basta clicar nele. A lista de membros aparece ao lado da listagem de grupos.
+

@@ -30,9 +30,9 @@ delete(Pid, [{Pid,Nick}|T], L) -> {Nick, reverse(T, L)};
 delete(Pid, [H|T], L)          -> delete(Pid, T, [H|L]);
 delete(_, [], L)               -> {"????", L}.
 
-find_nick_pid(To, [{Pid, To}|T]) -> Pid;
-find_nick_pid(To, [H|T]) -> find_nick_pid(To, T);
-find_nick_pid(To, []) -> self().
+find_nick_pid(To, [{Pid, To}|_]) -> Pid;
+find_nick_pid(To, [_|T]) -> find_nick_pid(To, T);
+find_nick_pid(_, []) -> self().
 
 group_controller(ServerMM, Parent, Group, L) ->
     receive
@@ -46,7 +46,7 @@ group_controller(ServerMM, Parent, Group, L) ->
       Dest = find_nick_pid(To, L),
       send(Dest, {msg,From,C,"<private> "++Str}),
       group_controller(ServerMM, Parent, Group, L);
-	{chan, C, update_users} ->
+	{chan, _, update_users} ->
 	    Nicks = lists:map(fun({_,Nick}) -> Nick end, L),
       foreach(fun({Pid,_}) -> send(Pid, {sys,update_users,Nicks}) end, L),
       group_controller(ServerMM, Parent, Group, L);
@@ -57,7 +57,7 @@ group_controller(ServerMM, Parent, Group, L) ->
       Members = lists:map(fun({_,Nick}) -> Nick end, L),
 	    send(C, {sys, update_members, Members, GroupChannel, ClientChannel}),
 	    group_controller(ServerMM, Parent, Group, L);
-	{chan, C, {sys,update_members, Members, ClientChannel}} ->
+	{chan, _, {sys,update_members, Members, ClientChannel}} ->
 	    send(ClientChannel, {sys, update_members, Members}),
 	    group_controller(ServerMM, Parent, Group, L);
 	{mm, C, {login, Nick}} ->
