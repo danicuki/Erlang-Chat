@@ -1,41 +1,32 @@
-Files names
+IRCLITE
+Mauricio Aniche    6892132
+Mauricio De Diana  2369774
 
-test1     -- test function
-any_apply -- apply any function
+[Geral]
+- Todo código adicionado está delimitado por comentários que identificam qual o exercício ao qual ele se refere. Isso é válido para os exercícios de 1 a 4. Como o 5 implicou em muitas modificações, nós não as delimitamos.
+- O Makefile tem dois comandos para testes:
+-- make chat_server
+-- make chat_client
+- O make chat_client cria quatro usuários, com as seguintes configurações:
+-- jane, jim e joe no grupo 'general'
+-- sue no grupo 'general2'
 
-mod_*    Plugings for lib_auth_spawn
+[Código]
+- As funcionalidades com características de RPC usam mensagens no formato get_X para a requisição e X para a resposta. Ex: get_all_groups é a requisição e all_groups é a resposta.
 
-lib_*    Auth spawn and related routines
+[Funcionamento]
+- Mensagens privadas: Escrever a mensagem no campo de mensagens, o nick de destino no campo à esquerda do botão 'Pvt' e clicar no botão. O campo de nick de destino é preenchido automaticamente caso se clique em um nome na lista de contatos. As mensagens privadas aparecem no destino marcadas com '[PVT]'.
+- Lista de nicks em um grupo: Escrever o nome do grupo no campo à esquerda do botão 'Nicks in Grp' e clicar no botão.
+- Lista de grupos: Clicar no botão 'Groups'.
 
-lib_auth_spawn.erl  
-lib_auth.erl  
-lib_auth_test.erl  
-lib_tcp_cs.erl  
-lib_tcp_mm.erl
+[Observações para o item 5]
+Inicialização
+1 - Um chat_client se conecta no chat_server, pedindo para se conectar em um chat_group.
+2.1 - Se o chat_group não existe, o chat_server manda uma mensagem para o chat_client instruindo a criar o chat_group.
+2.1.1 - O chat_client cria o chat_group (via lib_chan) e avisa o chat_server em que endereço e porta o chat_group está para que quando outros chat_clients tentem se conectar o chat_server possa instruí-los. Quando o chat_client precisa avisar o chat_server de seu endereço e porta ele está usando como endereço o localhost, hardcoded, e a porta ele lê de um arquivo no formato <nick>.conf usado pela lib_chan. Em uma aplicação real, ao invés de ter o endereço hardcoded poderíamos ler essa configuração de um outro arquivo de configuração.
+2.2 - Se o chat_group existe, o chat_server manda uma mensagem para o  o chat_client instruindo a se conectar num chat_group existente, passando o endereço e a porta.
+2.3 - Independente de ser o criador ou não do chat_group, o chat_client se conecta nele (via lib_chan) e se desconecta do chat_server. Sempre que isso acontece o chat_group avisa os outros chat_clients de que um chat_client saiu do chat_group.
 
-irc_client.erl            -- client controller
-irc_client_widget.erl     -- client widget
-irc_group_controller.erl  -- group controller
-irc_server.erl            -- server
-mod_irc_controller.erl    -- plugin for auth
-
-start_server()       ${HOME}/.erlang_config/auth_spawn.conf)
-start_server(Conf)
-
-{port, 1234}.
-{service, srpc,  password, "secret",     mfa, mod_srpc,  start, [test1]}.
-{service, root,  password, "verySecret", mfa, mod_srpc,  start, [any_apply]}.
-{service, test1, password, "test1",      mfa, mod_test1, start, {hi, joe}}.
-{service, echo,  password, "echo1",      mfa, mod_echo,  start, {server,args}}.
-{service, fac,   password, "facSecret",  mfa, mod_fac,   run, []}.
-
-Client code:
- 
-connect([{Host,Port,Service,Pwd}]) -> {ok, Pid} | error
-connect(Conf)
-connect()
-
-rpc(Pid, Mod, Func, Args)
-cast(Pid, Mod, Func, Args)
-stop(Pid)
-
+Finalização
+1.1 - Quando um chat_client que não é o criador de um chat_group se desconecta de um chat_group uma mensagem é enviada aos outros chat_clients de que ele saiu do grupo.
+1.2 - Quando um chat_client que é o criador de um chat_group se desconecta o chat_group morre. Ao fazer isso, ele envia uma mensagem aos outros chat_clients de que isso aconteceu.

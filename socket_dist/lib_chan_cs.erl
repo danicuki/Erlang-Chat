@@ -14,12 +14,11 @@
 -export([children/1]).
 
 
-%% start_raw_server(Port, Fun, Max, PacketLength)
+%% start_raw_server(Port, Fun, Max)
 %%   This server accepts up to Max connections on Port
 %%   The *first* time a connection is made to Port
 %%   Then Fun(Socket) is called. 
 %%   Thereafter messages to the socket result in messages to the handler.
-%%   PacketLength is usually 0,1,2 or 4 (see the inet manual page for details).
 
 %% tcp_is typically used as follows:
 %% To setup a listener
@@ -27,7 +26,8 @@
 %%     process_flag(trap_exit, true),
 %%     lib_chan_server:start_raw_server(Port, 
 %% 		         	       fun(Socket) -> input_handler(Socket) end, 
-%% 				       15, 0).
+%% 				       15,
+%%                                     0).
 
 start_raw_client(Host, Port, PacketLength) ->
     gen_tcp:connect(Host, Port,

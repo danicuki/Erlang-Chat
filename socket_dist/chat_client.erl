@@ -42,7 +42,6 @@ handler(Host, Port, HostPsw, Group, Nick) ->
     set_prompt(Widget, [Nick, " > "]),
     set_handler(Widget, fun parse_command/1),
     start_connector(Host, Port, HostPsw),
-    io:format("conectou!!!=====~n",[]),
     disconnected(Widget, Group, Nick).
 
 
@@ -73,7 +72,6 @@ wait_login_response(Widget, MM) ->
     	  {Host, Port} = get_host_and_port(Nick),
     		Parent = self(),
     	  spawn_link(fun() -> chat_group:start_group(MM, Parent, Nick, Group, Groups, Host, Port) end),
-        sleep(5000),
     	  GroupMM = connect_in_group(Group, Nick, Host, Port),
     	  insert_str(Widget, [Nick,"@", pid_to_list(self()),"I'm starting the group\n"]),
         % Espera se conectar no grupo.
@@ -158,7 +156,7 @@ try_to_connect(Parent, Host, Port, Pwd) ->
 
 try_to_connect_in_group(Host, Port, Group) ->
 	case lib_chan:connect(Host, Port, chat_group, "AsDT67aQ", [Group]) of
-		{error, Why} ->
+		{error, _Why} ->
 			 sleep(2000),
 			 try_to_connect_in_group(Host, Port, Group);
 		{ok, MM} -> MM
