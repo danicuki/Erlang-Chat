@@ -1,9 +1,9 @@
 %% ---
 %%  Excerpted from "Programming Erlang",
 %%  published by The Pragmatic Bookshelf.
-%%  Copyrights apply to this code. It may not be used to create training material, 
+%%  Copyrights apply to this code. It may not be used to create training material,
 %%  courses, books, articles, and the like. Contact us if you are in doubt.
-%%  We make no guarantees that this code is fit for any purpose. 
+%%  We make no guarantees that this code is fit for any purpose.
 %%  Visit http://www.pragmaticprogrammer.com/titles/jaerlang for more book information.
 %%---
 -module(mod_chat_controller).
@@ -22,9 +22,13 @@ loop(MM) ->
 	     loop(MM);
 	 {'EXIT', MM, _Why} ->
 	     chat_server ! {mm_closed, MM};
+ 	 {chan_closed, MM} ->
+ 		   chat_server ! {mm_closed, MM},
+ 		   loop(MM);
+
 	 Other ->
 	     io:format("mod_chat_controller unexpected message =~p (MM=~p)~n",
 		       [Other, MM]),
 	     loop(MM)
-    end. 
+    end.
 

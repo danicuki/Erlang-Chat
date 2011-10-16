@@ -1,9 +1,9 @@
 %% ---
 %%  Excerpted from "Programming Erlang",
 %%  published by The Pragmatic Bookshelf.
-%%  Copyrights apply to this code. It may not be used to create training material, 
+%%  Copyrights apply to this code. It may not be used to create training material,
 %%  courses, books, articles, and the like. Contact us if you are in doubt.
-%%  We make no guarantees that this code is fit for any purpose. 
+%%  We make no guarantees that this code is fit for any purpose.
 %%  Visit http://www.pragmaticprogrammer.com/titles/jaerlang for more book information.
 %%---
 -module(lib_chan).
@@ -32,7 +32,7 @@ start_server(ConfigFile) ->
 		[] ->
 		    start_server1(ConfigData);
 		Errors ->
-		    exit({eDaemonConfig, Errors})
+		    exit({eDeaemonConfig, Errors})
 	    end;
 	{error, Why} ->
 	    exit({eDaemonConfig, Why})
@@ -43,7 +43,7 @@ start_server(ConfigFile) ->
 check_terms(ConfigData) ->
     L = map(fun check_term/1, ConfigData),
     [X || {error, X} <- L].
-		    
+
 check_term({port, P}) when is_integer(P)     -> ok;
 check_term({service,_,password,_,mfa,_,_,_}) -> ok;
 check_term(X) -> {error, {badTerm, X}}.
@@ -56,9 +56,9 @@ start_server2(ConfigData) ->
     start_port_server(Port, ConfigData).
 
 start_port_server(Port, ConfigData) ->
-    lib_chan_cs:start_raw_server(Port, 
-				fun(Socket) -> 
-					start_port_instance(Socket, 
+    lib_chan_cs:start_raw_server(Port,
+				fun(Socket) ->
+					start_port_instance(Socket,
 							    ConfigData) end,
 				100,
 				4).
@@ -190,7 +190,7 @@ wait_close(MM) ->
 	{chan_closed, MM} ->
 	    true
     after 5000 ->
-	    io:format("**error lib_chan~n"),
+	    io:format("**errror lib_chan~n"),
 	    true
     end.
 

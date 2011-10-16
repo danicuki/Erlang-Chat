@@ -17,18 +17,18 @@
 start(G, U) ->
   connect("localhost", 2223, "AsDT67aQ", G, U).
 
-start(G) ->
-  connect("localhost", 2223, "AsDT67aQ", G, "joe").
+start(U) ->
+  connect("localhost", 2223, "AsDT67aQ", "general", U).
 
 start() ->
     connect("localhost", 2223, "AsDT67aQ", "general", "daniel").
 
 
 test() ->
-    connect("localhost", 2223, "AsDT67aQ", "general", "daniel").
-    % connect("localhost", 2223, "AsDT67aQ", "general", "daniella"),
-    % connect("localhost", 2223, "AsDT67aQ", "general", "reverbel"),
-    % connect("localhost", 2223, "AsDT67aQ", "general", "steve").
+    connect("localhost", 2223, "AsDT67aQ", "general", "daniel"),
+    connect("localhost", 2223, "AsDT67aQ", "general", "daniella"),
+    connect("localhost", 2223, "AsDT67aQ", "general", "reverbel"),
+    connect("localhost", 2223, "AsDT67aQ", "general", "steve").
 
 
 connect(Host, Port, HostPsw, Group, Nick) ->
@@ -68,13 +68,16 @@ wait_login_response(Widget, MM) ->
     receive
     {chan, MM, {create_group, Group, Nick, Groups}} ->
     	  io:format("Group novo. Usuario ~p vai criar o grupo ~p~n", [Nick, Group]),
+    	  io:format("Grupos existentes: ~p ~n", [Groups]),
     	  {Host, Port} = get_host_and_port(Nick),
     		Parent = self(),
     	  spawn_link(fun() -> chat_group:start_group(MM, Parent, Nick, Group, Groups, Host, Port) end),
+        sleep(5000),
     	  GroupMM = connect_in_group(Group, Nick, Host, Port),
     	  insert_str(Widget, [Nick,"@", pid_to_list(self()),"I'm starting the group\n"]),
         % Espera se conectar no grupo.
         wait_login_response(Widget, GroupMM);
+
     {chan, MM, {connect_to_group, Group, Nick, Host, Port}} ->
     	  GroupMM = connect_in_group(Group, Nick, Host, Port),
     		% Fecha a conexao que foi aberta com o servidor
@@ -103,6 +106,9 @@ active(Widget, MM) ->
      receive
 	 {Widget, Nick, Str} ->
 	     lib_chan_mm:send(MM, {relay, Nick, Str}),
+	     active(Widget, MM);
+	 {priv_message, Widget, From, Dest, Str} ->
+	     lib_chan_mm:send(MM, {priv_message, From, Dest, Str}),
 	     active(Widget, MM);
 	 {Widget, {give_me_the_members, Group}} ->
 	     lib_chan_mm:send(MM, {give_me_the_members, Group}),
@@ -139,7 +145,6 @@ try_to_connect(Parent, Host, Port, Pwd) ->
     case lib_chan:connect(Host, Port, chat, Pwd, []) of
 	{error, _Why} ->
 	    Parent ! {status, {cannot, connect, Host, Port}},
-	    sleep(2000),
 	    try_to_connect(Parent, Host, Port, Pwd);
 	{ok, MM} ->
 	    lib_chan_mm:controller(MM, Parent),
@@ -149,9 +154,9 @@ try_to_connect(Parent, Host, Port, Pwd) ->
 
 try_to_connect_in_group(Host, Port) ->
 	case lib_chan:connect(Host, Port, chat_group, "AsDT67aQ", []) of
-		{error, _Why} ->
-			sleep(2000),
-			try_to_connect_in_group(Host, Port);
+		{error, Why} ->
+			 sleep(2000),
+			 try_to_connect_in_group(Host, Port);
 		{ok, MM} -> MM
 	end.
 

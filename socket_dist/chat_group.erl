@@ -16,14 +16,15 @@
 start_group(ServerMM, Parent, Nick, Group, Groups, Host, Port) ->
     process_flag(trap_exit, true),
     controller(ServerMM, self()),
-  	self() ! {chan, Parent, {relay, Nick, "I'm starting the group"}},
+    register(list_to_atom(Group), self()),
+    % self() ! {chan, Parent, {relay, Nick, "I'm starting the group"}},
     % self() ! {chan, Parent, update_users},
     io:format("Criando grupo ~p~n", [Group]),
-    lib_chan:start_server("daniel.conf"),
+    lib_chan:start_server(Nick++".conf"),
   	io:format("Grupo ~p criado em ~p:~p~n", [Group, Host, Port]),
     send(ServerMM, {ack, Group, Host, Port}),
     % send(ServerMM, {sys, update_groups, Groups}),
-  	group_controller(ServerMM, Parent, Group, [Nick]).
+  	group_controller(ServerMM, Parent, Group, []).
 
 
 
@@ -31,9 +32,11 @@ delete(Pid, [{Pid,Nick}|T], L) -> {Nick, reverse(T, L)};
 delete(Pid, [H|T], L)          -> delete(Pid, T, [H|L]);
 delete(_, [], L)               -> {"????", L}.
 
+find_nick_pid(To, [{Pid, To}|T]) -> Pid;
+find_nick_pid(To, [H|T]) -> find_nick_pid(To, T);
+find_nick_pid(To, []) -> self().
 
 group_controller(ServerMM, Parent, Group, L) ->
-  io:format("Group Recebeu ~p ~p ~p ~p ~n", [ServerMM, Parent, Group, L]),
     receive
 	{chan, C, {give_me_the_members, Group}} ->
       ServerMM ! {give_me_the_members, Group, C},
@@ -41,6 +44,10 @@ group_controller(ServerMM, Parent, Group, L) ->
 	{chan, C, {relay, Nick, Str}} ->
 	    foreach(fun({Pid,_}) -> send(Pid, {msg,Nick,C,Str}) end, L),
 	    group_controller(ServerMM, Parent, Group, L);
+  {chan,C, {priv_message, From, To, Str}} ->
+      Dest = find_nick_pid(To, L),
+      send(Dest, {msg,From,C,"<private> "++Str}),
+      group_controller(ServerMM, Parent, Group, L);
 	{chan, C, update_users} ->
 	    Nicks = lists:map(fun({_,Nick}) -> Nick end, L),
       foreach(fun({Pid,_}) -> send(Pid, {sys,update_users,Nicks}) end, L),
@@ -52,13 +59,12 @@ group_controller(ServerMM, Parent, Group, L) ->
       Members = lists:map(fun({_,Nick}) -> Nick end, L),
 	    send(C, {sys, update_members, Members}),
 	    group_controller(ServerMM, Parent, Group, L);
-	{login, C, Nick, Groups} ->
-	    io:format("Group Recebeu Login", []),
+	{mm, C, {login, Nick}} ->
 	    controller(C, self()),
 	    send(C, ack),
 	    self() ! {chan, C, {relay, Nick, "I'm joining the groups!"}},
 	    self() ! {chan, C, update_users},
-	    send(C, {sys,update_groups,Groups}),
+      % send(C, {sys,update_groups,Groups}),
 	    group_controller(ServerMM, Parent, Group, [{C,Nick}|L]);
 	{chan_closed, C} ->
 	    {Nick, L1} = delete(C, L, []),

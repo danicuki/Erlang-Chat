@@ -47,7 +47,8 @@ widget(Pid) ->
 			  {packer_y, [{stretch,10,100,120}, {stretch,1,15,15}, {stretch,1,15,15}, {stretch,10,100,120}]}]),
     gs:create(editor,editor,packer, [{pack_x,1},{pack_y,1},{vscroll,right}]),
     gs:create(entry, entry, packer, [{pack_x,1},{pack_y,2},{keypress,true}]),
-    gs:create(listbox, users, packer, [{pack_x,2},{pack_y,{1,2}},{vscroll,right},{items, []}]),
+    gs:create(listbox, users, packer, [{pack_x,2},{pack_y,1},{vscroll,right},{items, []}]),
+    gs:create(button, priv_but, packer, [{pack_x,2},{pack_y,2},{label, {text,"Send Private"}}, {width,45}]),
     gs:create(label,packer,[{label,{text,"Groups"}},{width,150},{pack_x,1},{pack_y,3}]),
     gs:create(label,packer,[{label,{text,"Members"}},{width,150},{pack_x,2},{pack_y,3}]),
     gs:create(listbox, groups, packer, [{pack_x,1},{pack_y,4},{vscroll,right},{click,true},{items, []}]),
@@ -109,6 +110,25 @@ loop(Win, Pid, Prompt, State, Parse) ->
 		    self() ! {insert, "** bad input**\n** /h for help\n"}
 	    end,
 	    loop(Win, Pid, Prompt, State, Parse);
+	{gs,priv_but,click,_,_} ->
+	    Dest = try gs:read(users, selection) of
+		    [Index] -> gs:read(users, {get, Index})
+	    catch
+		    _ -> self() ! {insert, "Select user to send private message\n"},
+        loop(Win, Pid, Prompt, State, Parse)
+	    end,
+	    Text = gs:read(entry, text),
+      gs:config(entry, {delete,{0,last}}),
+	    gs:config(entry, {insert,{0,Prompt}}),
+	    try Parse(Text) of
+  		  Term ->
+  		    Pid ! {priv_message, self(), State, Dest, Term}
+  	    catch
+  		    _:_ ->
+  		    self() ! {insert, "** bad input**\n** /h for help\n"}
+  	    end,
+	    loop(Win, Pid, Prompt, State, Parse);
+
 	{gs,_,configure,[],[W,H,_,_]} ->
 	    gs:config(packer, [{width,W},{height,H}]),
 	    loop(Win, Pid, Prompt, State, Parse);

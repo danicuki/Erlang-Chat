@@ -26,7 +26,7 @@ start_server() ->
 			   io:format("Server terminated with:~p~n",[Val])
 		   end)).
 
-groups(L) -> lists:map(fun({Group, Pid}) -> Group end, L).
+groups(L) -> lists:map(fun({Group, _, _, _}) -> Group end, L).
 
 server_loop(L) ->
   receive
@@ -36,12 +36,12 @@ server_loop(L) ->
   		      send(Channel, {connect_to_group, Group, Nick, Host, Port}),
   		      server_loop(L);
   		    error ->
-  		      io:format("Nao tem o grupo", []),
+  		      io:format("Nao tem o grupo ~n", []),
   		      send(Channel, {create_group, Group, Nick, groups(L)}),
             io:format("waiting ~p (~p) to create the group ~p~n", [Nick, Channel, Group]),
       			receive
       			    {mm, Channel, {ack, Group, Host, Port}} ->
-           			    io:format("group ~p (~p) has been created~n", [Group, Channel]),
+           			    io:format("group ~p (~p) has been created on ~p:~p ~n", [Group, Channel, Host, Port]),
       		            server_loop([{Group, Host, Port, Channel}|L])
             after 10000 ->
                   server_loop(L)
