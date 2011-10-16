@@ -62,10 +62,10 @@ server_loop(L) ->
   	{mm, Channel, {sys, update_groups}} ->
   	    send(Channel, {sys, update_groups, groups(L)}),
    	    server_loop(L);
-  	{'EXIT', Pid, allGone} ->
-  	    L1 = remove_group(Pid, L),
-  	    self() ! {mm, self(), {sys, update_groups}},
-  	    server_loop(L1);
+  	{mm, _From, {groupDied,Group}} ->
+      	L1 = remove_group(Group, L),
+        foreach(fun({_, _, _, Channel}) -> self() ! {mm, Channel, {sys, update_groups}}  end, L1),
+      	server_loop(L1);
   	Msg ->
   	    io:format("Server received Msg=~p~n",
   		      [Msg]),

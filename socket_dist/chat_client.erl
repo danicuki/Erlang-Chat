@@ -126,6 +126,9 @@ active(Widget, MM) ->
 	 {chan, MM, {msg, From, Pid, Str}} ->
 	     insert_str(Widget, [From,"@",pid_to_list(Pid)," ", Str, "\n"]),
 	     active(Widget, MM);
+	 {chan, MM, group_died} ->
+ 		   insert_str(Widget, ["The group is dead! No more donuts for you...\n"]),
+ 		   active(Widget, MM);
 	 {'EXIT',Widget,windowDestroyed} ->
 	     lib_chan_mm:close(MM);
 	 {close, MM} ->
