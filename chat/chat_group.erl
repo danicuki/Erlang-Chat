@@ -73,8 +73,9 @@ group_controller(ServerMM, Parent, Group, L) ->
 	    self() ! {chan, C, update_users},
 	    group_controller(ServerMM, Parent, Group, L1);
   {'EXIT', Parent, _Reason} ->
-  	foreach(fun({Pid,_}) -> send(Pid, group_died) end, L), % envia morte do grupo para todos os membros
-  	send(ServerMM, {groupDied,Group});
+  	foreach(fun({Pid,_}) -> send(Pid, group_died) end, L),
+  	send(ServerMM, {groupDied,Group}),
+  	ServerMM ! close;
 	Any ->
 	    io:format("group controller received Msg=~p~n", [Any]),
 	    group_controller(ServerMM, Parent, Group, L)

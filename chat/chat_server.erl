@@ -42,7 +42,8 @@ server_loop(L) ->
       			receive
       			    {mm, Channel, {ack, Group, Host, Port}} ->
            			    io:format("group ~p (~p) has been created on ~p:~p ~n", [Group, Channel, Host, Port]),
-      		            server_loop([{Group, Host, Port, Channel}|L])
+           			    foreach(fun({_, _, _, Channel}) -> self() ! {mm, Channel, {sys, update_groups}}  end, L),
+      		          server_loop([{Group, Host, Port, Channel}|L])
             after 10000 ->
                   server_loop(L)
       		  end
@@ -57,8 +58,18 @@ server_loop(L) ->
     {mm, _Channel, {sys,update_members, Members, GroupChannel, ClientChannel}} ->
         send(GroupChannel, {sys, update_members, Members, ClientChannel}),
         server_loop(L);
-  	{mm_closed, _} ->
+  	{mm_closed, MM} ->
+  	    io:format("Client disconected =~p~n", [MM]),
   	    server_loop(L);
+    % {mm_closed, Channel} ->
+    %     case lookup_channel(Channel, L) of
+    %       {ok, Group} ->
+    %         L1 = remove_group(Group, L),
+    %             foreach(fun({_, _, _, Channel}) -> self() ! {mm, Channel, {sys, update_groups}}  end, L1),
+    %             server_loop(L1);
+    %           error ->   server_loop(L)
+    %         end;
+
   	{mm, Channel, {sys, update_groups}} ->
   	    send(Channel, {sys, update_groups, groups(L)}),
    	    server_loop(L);
