@@ -1,5 +1,11 @@
+Esse sistema melhora o sistema de chat proposto no capítulo 11 do livro do Armstrong 
+Programming Erlang. 
+
+Mais detalhes em:
+
+http://www.ime.usp.br/~reverbel/PFC-11/trabalhos/ep2/
+
 IRCLITE
-Daniel Cukier    2943472
 
  - Para compilar o código e executar o código, abrir 2 terminais e em cada um deles digitar:
  		term1) make chat_server
